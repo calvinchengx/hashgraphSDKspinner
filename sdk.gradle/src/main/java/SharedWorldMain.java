@@ -17,15 +17,19 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.Console;
 import com.swirlds.platform.Platform;
 import com.swirlds.platform.SwirldMain;
 import com.swirlds.platform.SwirldState;
+import org.apache.logging.log4j.core.jmx.Server;
+import org.armedbear.lisp.Cons;
 
 /**
  * This HelloSwirld creates a single transaction, consisting of the string "Hello Swirld", and then goes
@@ -42,6 +46,8 @@ public class SharedWorldMain implements SwirldMain {
 	/** sleep this many milliseconds after each sync */
 	public final int sleepPeriod = 100;
 
+	/** telnet port connections are available at this offset:**/
+	private final int portOffset = 1000;
 
 
 
@@ -77,17 +83,17 @@ public class SharedWorldMain implements SwirldMain {
 	@Override
 	public void run() {
 		String myName = platform.getState().getAddressBookCopy().getAddress(selfId).getSelfName();
-		String ipv4 = "";
+		InetAddress ipv4 = null;
 		int port_ipv4 = 0;
 
 		try{
-			ipv4=InetAddress.getByAddress(platform.getState().getAddressBookCopy().getAddress(selfId).getAddressExternalIpv4()).getHostAddress();
+			ipv4=InetAddress.getByAddress(platform.getState().getAddressBookCopy().getAddress(selfId).getAddressExternalIpv4());   //.getHostAddress();
 		}catch(UnknownHostException e){
 			System.err.println(e.toString());
 		}
 		port_ipv4 = platform.getState().getAddressBookCopy().getAddress(selfId).getPortExternalIpv4();
 
-		console.out.println("Hello Swirld from " + myName + " ("+ipv4+":"+String.valueOf(port_ipv4)+")");
+		console.out.println("Hello Swirld from " + myName + " ("+ipv4.getHostAddress()+":"+String.valueOf(port_ipv4)+")");
 
 
 
@@ -108,7 +114,7 @@ public class SharedWorldMain implements SwirldMain {
 
 
 		/////
-		//stdin
+		//stdin - raw stdin connections
 		/////
 		this.console.addKeyListener(new KeyListener() {
 			private String _buffer="";
@@ -150,12 +156,8 @@ public class SharedWorldMain implements SwirldMain {
 		/////
 		//network in - raw telnet connections (separate Thread)
 		/////
-		MyRunnable myRunnable = new MyRunnable(ipv4,port_ipv4);
-		new Thread(myRunnable).start();
-
-
-
-
+		TelnetRunnable telnetRunnable = new TelnetRunnable(ipv4,port_ipv4+portOffset);
+		new Thread(telnetRunnable).start();
 
 
 
@@ -163,21 +165,14 @@ public class SharedWorldMain implements SwirldMain {
 		/////
 		//Listen for consensus updates
 		/////
-		while (true) {
-			SharedWorldState state = (SharedWorldState) platform.getState();
-			String allReceived = state.getAllReceived();
-			String received = state.getReceived();
+		ConsensusRunnable consensusRunnable = new ConsensusRunnable(lastAllReceived);
+		new Thread(consensusRunnable).start();
 
-			if (!lastAllReceived.equals(allReceived)) {
-				lastAllReceived = allReceived;
-				console.out.println("Received: " + allReceived); // print all received transactions
-			}
-			try {
-				Thread.sleep(sleepPeriod);
-			} catch (Exception e) {
 
-			}
-		}
+
+
+
+
 	}
 
 	@Override
@@ -193,37 +188,93 @@ public class SharedWorldMain implements SwirldMain {
 
 
 
+	public class ConsensusRunnable implements Runnable {
 
-	public class MyRunnable implements Runnable {
+		public volatile String _lastAllReceived;
 
-		public volatile String _ipv4;
+
+		ConsensusRunnable(String _lastAllReceived){
+			this._lastAllReceived=_lastAllReceived;
+		}
+
+		@Override
+		public void run() {
+
+
+			while (true) {
+				SharedWorldState state = (SharedWorldState) platform.getState();
+				String allReceived = state.getAllReceived();
+				String received = state.getReceived();
+
+				if (!_lastAllReceived.equals(allReceived)) {
+					_lastAllReceived = allReceived;
+					console.out.println("Received: " + allReceived); // print all received transactions
+				}
+				try {
+					Thread.sleep(sleepPeriod);
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+				}
+			}
+
+
+		}
+	}
+	public class TelnetRunnable implements Runnable {
+
+		public volatile InetAddress _ipv4;
 		public volatile int _port_ipv4;
 
-		public MyRunnable(String ipv4,int port_ipv4){
+		public TelnetRunnable(InetAddress ipv4,int port_ipv4){
 			this._ipv4 = ipv4;
 			this._port_ipv4 = port_ipv4;
 		}
 
 		public void run(){
-			Socket pingSocket = null;
+
 			PrintWriter out = null;
 			BufferedReader in = null;
 
-			try {
-				pingSocket = new Socket(_ipv4, _port_ipv4);
-				out = new PrintWriter(pingSocket.getOutputStream(), true);
-				in = new BufferedReader(new InputStreamReader(pingSocket.getInputStream()));
+			System.out.println("Remote socket listening on: "+_ipv4.getHostAddress()+":"+String.valueOf(_port_ipv4));
 
-				out.println("ping");
-				//System.out.println(in.readLine());
-				SharedWorldMain.this.console.out.println(in.readLine());
-				out.close();
-				in.close();
-				pingSocket.close();
-			} catch (IOException e) {
-				System.out.println(e.getMessage());
-				return;
+			ServerSocket listener = null;
+			try {
+				listener = new ServerSocket(_port_ipv4,0,_ipv4);
+				while (true) {
+					Socket socket = listener.accept();
+					try {
+						in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+						SharedWorldMain.this.console.out.println(in.readLine());
+
+						out = new PrintWriter(socket.getOutputStream(), true);
+						out.println(new Date().toString());
+
+					} finally {
+						socket.close();
+						in.close();
+						out.close();
+					}
+				}
 			}
+			catch (IOException e){
+				System.out.println(e.getMessage());
+			}
+
+//			try{
+//				socket = new ServerSocket(_port_ipv4,0,_ipv4);
+//				out = new PrintWriter(socket.getOutputStream(), true);
+//				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//
+//				out.println("ping");
+//				//System.out.println(in.readLine());
+//				SharedWorldMain.this.console.out.println(in.readLine());
+//				out.close();
+//				in.close();
+//				socket.close();
+//			} catch (IOException e) {
+//				System.out.println(e.getMessage());
+//				return;
+//			}
 		}
 
 	}
