@@ -7,17 +7,24 @@ if [ $# -ne 2 ]; then
     exit
 fi
 
-
+SDK="$1"
 FN="$2"
 
 
-ln -sf $1 ../sdk
+ln -sf $SDK ../sdk
 
 RESULT=`gradle jar`
 if [[ ${RESULT} != *"BUILD SUCCESSFUL"* ]];then
   echo "gradle jar failed!"
   exit
 fi
+
+
+
+
+
+
+
 
 
 #Get the most up-to-date .jar:
@@ -27,10 +34,14 @@ fi
 #Copy to swirlds sdk directory:
 ###cp ./build/libs/$JARFILENAME $1/data/apps/
 #Copy most recent jar file:
-cp `ls -tr ./build/libs/*.jar | tail -n 1` $1/data/apps/$FN
+cp `ls -tr ./build/libs/*.jar | tail -n 1` $SDK/data/apps/$FN
 
 echo "Built successfully."
 echo ""
+
+
+
+
 
 
 
@@ -49,17 +60,17 @@ awk "NR==$LINENUMBER{print \"app,          $FN\"}1" config.txt > tmp && mv tmp c
 #app,          $JARFILENAME" < config.txt
 
 #Optional...
-#java -jar swirlds.jar
+java -jar swirlds.jar
 
 #Pop back to original directory
 popd
 
-echo ""
-echo "Success."
-echo "sdk configured."
-echo "Changes made to: \"config.txt\" and \"$2\""
-echo ""
-echo "***Now run with:***"
-echo "cd ../sdk"
-echo "----->>>     java -jar swirlds.jar"
-echo ""
+# echo ""
+# echo "Success."
+# echo "sdk configured."
+# echo "Changes made to: \"config.txt\" and \"$2\""
+# echo ""
+# echo "***Now run with:***"
+# echo "cd ../sdk"
+# echo "----->>>     java -jar swirlds.jar"
+# echo ""
