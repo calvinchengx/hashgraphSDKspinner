@@ -67,3 +67,12 @@ Link hashgraph SDK:
 `cd sdk`
 
 `java -jar swirlds.jar`
+
+
+
+### Interacting with the hashgraph network
+
+When you run the program, a number of windows appear
+
+- write to the distributed ledger by entering strings in any one of the windows
+- or, write to the ledger by telnet'ing into any one of the windows e.g. `telnet 127.0.0.1 51206`
