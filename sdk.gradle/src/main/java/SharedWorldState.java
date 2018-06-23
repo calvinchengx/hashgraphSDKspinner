@@ -10,14 +10,12 @@
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.swirlds.platform.Address;
 import com.swirlds.platform.AddressBook;
 import com.swirlds.platform.FCDataInputStream;
@@ -26,6 +24,7 @@ import com.swirlds.platform.FastCopyable;
 import com.swirlds.platform.Platform;
 import com.swirlds.platform.SwirldState;
 import com.swirlds.platform.Utilities;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * This holds the current state of the swirld. For this simple "hello swirld" code, each transaction is just
@@ -37,10 +36,8 @@ public class SharedWorldState implements SwirldState {
 	 * The shared state is just a list of the strings in all transactions, listed in the order received
 	 * here, which will eventually be the consensus order of the community.
 	 */
-	//TODO - define more useful data structure
-	//TODO - structure/protocol more suitable for processing smart contracts
-	//TODO - Google protobuf?
-	private List<String> strings = new ArrayList<String>();
+	//serialized String's:
+	private List<String> protobufs = new ArrayList<>();
 
 	/** smart contract can execute for max 10 seconds*/
 	private final long walltime = 10000L;
@@ -48,16 +45,48 @@ public class SharedWorldState implements SwirldState {
 	/** names and addresses of all members */
 	private AddressBook addressBook;
 
-	/** @return all the strings received so far from the network */
-	public synchronized List<String> getStrings() {
-		return strings;
+	/** @return all the protobufs received so far from the network */
+	public synchronized List<String> getAllReceived() {
+		return protobufs;
+	}
+	public synchronized String getAllReceived_message() {
+		String returnStr="";
+
+		Iterator itr = protobufs.iterator();
+
+		while(itr.hasNext()){
+			String _str= (String)itr.next();
+			byte[] _bytes = _str.getBytes(StandardCharsets.UTF_8);
+			try {
+
+				Hashgraph.Tx _protobuf = Hashgraph.Tx.parseFrom(_bytes);
+				returnStr += _protobuf.getMessage()+",";
+
+			}catch(InvalidProtocolBufferException e){
+				System.out.println("InvalidProtocolBufferException");
+				System.out.println(e.getMessage());
+			}
+		}
+		return returnStr;
 	}
 
+
+	/** @return all the strings received so far from the network */
+	/*
+	public synchronized List<Hashgraph.Tx> getStrings() {
+		return strings;
+	}
+	*/
+
 	/** @return all the strings received so far from the network, concatenated into one */
+	/*
 	public synchronized String getAllReceived() {
 		return strings.toString();
 	}
+	*/
+
 	/** @return all the strings received so far from the network, concatenated into one */
+	/*
 	public synchronized String getReceived() {
 		String returnStr="";
 		if(strings.size()>0){
@@ -65,11 +94,14 @@ public class SharedWorldState implements SwirldState {
 		}
 		return returnStr;
 	}
+	*/
 
 	/** @return the same as getReceived, so it returns the entire shared state as a single string */
+	/*
 	public synchronized String toString() {
 		return strings.toString();
 	}
+	*/
 
 	// ///////////////////////////////////////////////////////////////////
 
@@ -88,8 +120,10 @@ public class SharedWorldState implements SwirldState {
 	@Override
 	public synchronized void copyTo(FCDataOutputStream outStream) {
 		try {
-			Utilities.writeStringArray(outStream,
-					strings.toArray(new String[0]));
+			//Utilities.writeStringArray(outStream,strings.toArray(new String[0]));
+			Utilities.writeStringArray(outStream,protobufs.toArray(new String[0]));
+//			byte[] x = ArrayUtils.toPrimitive(protobufs.toArray(new Byte[0]));
+//			Utilities.writeByteArray(outStream,x);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -98,8 +132,11 @@ public class SharedWorldState implements SwirldState {
 	@Override
 	public synchronized void copyFrom(FCDataInputStream inStream) {
 		try {
-			strings = new ArrayList<String>(
-					Arrays.asList(Utilities.readStringArray(inStream)));
+			//strings = new ArrayList<String>(Arrays.asList(Utilities.readStringArray(inStream)));
+			protobufs = new ArrayList<String>(Arrays.asList(Utilities.readStringArray(inStream)));
+//			Byte[] x= ArrayUtils.toObject(Utilities.readByteArray(inStream));
+//			protobufs = new ArrayList<Hashgraph.Tx>(Arrays.asList(x));
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -107,13 +144,15 @@ public class SharedWorldState implements SwirldState {
 
 	@Override
 	public synchronized void copyFrom(SwirldState old) {
-		strings = new ArrayList<String>(((SharedWorldState) old).strings);
+		//strings = new ArrayList<String>(((SharedWorldState) old).strings);
+		protobufs = new ArrayList<String>(((SharedWorldState) old).protobufs);
 		addressBook = ((SharedWorldState) old).addressBook.copy();
 	}
 
 	@Override
 	public synchronized void handleTransaction(long id, boolean consensus, Instant timestamp, byte[] transaction, Address address) {
-		strings.add(new String(transaction, StandardCharsets.UTF_8));
+		//strings.add(new String(transaction, StandardCharsets.UTF_8));
+		protobufs.add(new String(transaction, StandardCharsets.UTF_8));
 
 		if(consensus==true){
 			if(shouldRunSmartContract(transaction)){

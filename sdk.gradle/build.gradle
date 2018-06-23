@@ -1,5 +1,16 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.5'
+    }
+}
+
+
 plugins {
     id 'java'
+    id "com.google.protobuf" version "0.8.5"
 }
 
 group 'SharedWorld'
@@ -20,6 +31,9 @@ dependencies {
 
 
 
+
+
+
 jar {
     doFirst {
         manifest {
@@ -31,4 +45,29 @@ jar {
             }
         }
     }
+}
+
+
+
+sourceSets {
+    main {
+        proto {
+            // In addition to the default 'src/main/proto'
+            //srcDir 'src/main/protobuf'
+            
+        }
+        java {
+            //srcDirs 'src/main/java'
+            srcDirs 'build/generated/source/proto/main/java'
+        }
+    }
+    test {
+        proto {
+            // In addition to the default 'src/test/proto'
+            //srcDir 'src/test/protocolbuffers'
+        }
+    }
+//    generated{
+//        java.srcDir "${buildDir}/generated/src/proto/main/java"
+//    }
 }

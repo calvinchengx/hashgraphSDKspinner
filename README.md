@@ -19,6 +19,7 @@ Simply provide a reference to the official SDK.
 - Java 8 (Oracle)
 - Gradle
 - *Optional: IntelliJ*
+- Google protobuf
 
 Java 8 (Oracle) and Gradle can be conveniently installed using [sdkman](http://sdkman.io/).
 
@@ -29,6 +30,10 @@ Java 8 (Oracle) and Gradle can be conveniently installed using [sdkman](http://s
 `sdk list gradle`
 
 `sdk install gradle 4.7`
+
+Google protobuf can be installed on OSX with:
+
+`brew install protobuf`
 
 
 

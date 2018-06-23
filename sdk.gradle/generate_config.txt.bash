@@ -3,7 +3,7 @@
 if [ $# -ne 2 ]; then
     echo "Must specify path to swirlds sdk and name of your .jar!"
     echo "e.g."
-    echo "\`./run.bash /path/to/sdk SharedWorld.jar\`"
+    echo "\`./generate_config.txt.bash /path/to/sdk SharedWorld.jar\`"
     exit
 fi
 
@@ -32,7 +32,7 @@ fi
 #Just filename...
 ###JARFILENAME=$(basename "$JARFILENAME")
 #Copy to swirlds sdk directory:
-###cp ./build/libs/$JARFILENAME $1/data/apps/
+###cp ./build/libs/$JARFILENAME $SDK/data/apps/
 #Copy most recent jar file:
 cp `ls -tr ./build/libs/*.jar | tail -n 1` $SDK/data/apps/$FN
 
@@ -46,7 +46,7 @@ echo ""
 
 
 #Push to sdk directory!
-pushd $1
+pushd $SDK
 
 #First comment out ALL apps from config.txt
 sed -i '' '/^ *app./s/^/#/g' config.txt
@@ -68,7 +68,7 @@ popd
 # echo ""
 # echo "Success."
 # echo "sdk configured."
-# echo "Changes made to: \"config.txt\" and \"$2\""
+# echo "Changes made to: \"config.txt\" and \"$FN\""
 # echo ""
 # echo "***Now run with:***"
 # echo "cd ../sdk"

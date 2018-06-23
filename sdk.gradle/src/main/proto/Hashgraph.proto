@@ -1,0 +1,11 @@
+message Tx {
+  //**
+  //type=0 => standard message, type=1 => smart contract execution
+  //**
+  required int32 type = 1;
+  //**
+  //message string being written
+  //**
+  required string message = 2;
+  //optional string something_else = 3;
+}

@@ -21,15 +21,19 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.Console;
 import com.swirlds.platform.Platform;
 import com.swirlds.platform.SwirldMain;
 import com.swirlds.platform.SwirldState;
-import org.apache.logging.log4j.core.jmx.Server;
-import org.armedbear.lisp.Cons;
+
+
+
+
 
 /**
  * This HelloSwirld creates a single transaction, consisting of the string "Hello Swirld", and then goes
@@ -82,9 +86,14 @@ public class SharedWorldMain implements SwirldMain {
 
 	@Override
 	public void run() {
+
+
+
 		String myName = platform.getState().getAddressBookCopy().getAddress(selfId).getSelfName();
 		InetAddress ipv4 = null;
 		int port_ipv4 = 0;
+
+
 
 		try{
 			ipv4=InetAddress.getByAddress(platform.getState().getAddressBookCopy().getAddress(selfId).getAddressExternalIpv4());   //.getHostAddress();
@@ -93,14 +102,28 @@ public class SharedWorldMain implements SwirldMain {
 		}
 		port_ipv4 = platform.getState().getAddressBookCopy().getAddress(selfId).getPortExternalIpv4();
 
+
+
+
+
+
 		console.out.println("Hello Swirld from " + myName + " ("+ipv4.getHostAddress()+":"+String.valueOf(port_ipv4)+")");
 
+
+
+
+		//let's construct the protobuf:
+		Hashgraph.Tx tx = Hashgraph.Tx.newBuilder()
+				.setType(0)
+				.setMessage(myName)
+				.build();
 
 
 		// create a transaction. For this example app,
 		// we will define each transactions to simply
 		// be a string in UTF-8 encoding.
-		byte[] transaction = myName.getBytes(StandardCharsets.UTF_8);
+		//byte[] transaction = myName.getBytes(StandardCharsets.UTF_8);
+		byte[] transaction = tx.toByteArray();
 
 		// Send the transaction to the Platform, which will then
 		// forward it to the State object.
@@ -108,7 +131,13 @@ public class SharedWorldMain implements SwirldMain {
 		// all the other members of the community during syncs with them.
 		// The community as a whole will decide the order of the transactions
 		platform.createTransaction(transaction);
+
+
+
 		String lastAllReceived = "";
+
+
+
 
 
 
@@ -144,9 +173,15 @@ public class SharedWorldMain implements SwirldMain {
 			}
 
 			private void eoh_write(){
-				//TODO - protobuf encoding?
-				byte[] transaction = this._buffer.getBytes(StandardCharsets.UTF_8);
-				platform.createTransaction(transaction);
+//				byte[] transaction = this._buffer.getBytes(StandardCharsets.UTF_8);
+//				platform.createTransaction(transaction);
+
+				//let's construct the protobuf:
+				Hashgraph.Tx tx = Hashgraph.Tx.newBuilder()
+						.setType(0)
+						.setMessage(this._buffer)
+						.build();
+				platform.createTransaction(tx.toByteArray());
 			}
 
 		});
@@ -163,7 +198,7 @@ public class SharedWorldMain implements SwirldMain {
 
 
 		/////
-		//Listen for consensus updates
+		//And listen for consensus updates - removed infinite loop
 		/////
 		ConsensusRunnable consensusRunnable = new ConsensusRunnable(lastAllReceived);
 		new Thread(consensusRunnable).start();
@@ -171,6 +206,9 @@ public class SharedWorldMain implements SwirldMain {
 
 
 
+		/////
+		//...More...
+		/////
 
 
 	}
@@ -203,8 +241,11 @@ public class SharedWorldMain implements SwirldMain {
 
 			while (true) {
 				SharedWorldState state = (SharedWorldState) platform.getState();
-				String allReceived = state.getAllReceived();
-				String received = state.getReceived();
+				//String allReceived = state.getAllReceived();
+				//String received = state.getReceived();
+				String allReceived = state.getAllReceived_message();
+
+
 
 				if (!_lastAllReceived.equals(allReceived)) {
 					_lastAllReceived = allReceived;
