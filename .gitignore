@@ -21,3 +21,42 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+
+
+.DS_Store
+.secrets
+secrets
+old
+node_modules
+
+
+#swirlds.jar is patented and may require licensing
+swirlds.jar
+
+
+#Java builds
+build
+out
+
+#old
+old
+
+
+fc_template
+fcfs--all-systems
+
+
+.secrets
+secrets
+
+#Ignore created sdk symlink
+sdk
+
+
+
+*.lock
+*.bin
+.idea
+*.gitkeep
+javadoc
