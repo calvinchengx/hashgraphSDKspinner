@@ -61,6 +61,19 @@ Link hashgraph SDK:
 
 `gradle jar`
 
+**Step 2: Configure your node(s)**
+
+By default, we generate:
+
+- one hashgraph node
+- GUI disabled
+
+To test locally on a single machine, you could
+
+- enable more than one node (see "N_NODES" parameter in `.env` file)
+- enable GUI (see "GUI_ON" parameter in `.env` file)
+
+
 **Step 2: Generate config.txt**
 
 `./generate_config.txt.bash ../sdk SharedWorld.jar`   

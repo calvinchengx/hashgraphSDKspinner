@@ -1,0 +1,33 @@
+{
+  "name": "hashgraphsdkgradle",
+  "version": "0.0.1",
+  "description": "Gradle version of hashgraph SDK",
+  "main": "generateConfig.js",
+  "scripts": {
+    "test": "test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hynese/hashgraphSDKgradle.git"
+  },
+  "keywords": [
+    "hashgraph",
+    "sdk",
+    "hedera",
+    "java",
+    "maven",
+    "gradle",
+    "intellij",
+    "eclipse"
+  ],
+  "author": "Eamonn Hynes",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hynese/hashgraphSDKgradle/issues"
+  },
+  "homepage": "https://github.com/hynese/hashgraphSDKgradle#readme",
+  "dependencies": {
+    "ejs-cli": "^2.0.1",
+    "node-cidr": "^1.0.0"
+  }
+}

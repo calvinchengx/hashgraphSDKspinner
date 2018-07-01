@@ -205,14 +205,26 @@ public class SharedWorldState implements SwirldState {
 	 */
 	private boolean shouldRunSmartContract(byte[] transaction){
 
-		//TODO - for now, the protocol is a very dumb keyword protocol
-		String _str=new String(transaction, StandardCharsets.UTF_8);
-		//System.out.println(_str.trim());
+//		//xTODO - for now, the protocol is a very dumb keyword protocol
+//		String _str=new String(transaction, StandardCharsets.UTF_8);
+//		//System.out.println(_str.trim());
 
-		if(_str.trim().endsWith("mercury")==true){
-			System.out.println("Now execute smart contract!");
-			return true;
+		try {
+			Hashgraph.Tx _protobuf = Hashgraph.Tx.parseFrom(transaction);
+
+			if(_protobuf.getType()==1){   //yes, a smart contract :)
+				System.out.println("Now execute smart contract!");
+				return true;
+			}
+		}catch(InvalidProtocolBufferException e){
+			System.out.println("InvalidProtocolBufferException");
+			System.out.println(e.getMessage());
 		}
+
+//		if(_str.trim().endsWith("mercury")==true){
+//			System.out.println("Now execute smart contract!");
+//			return true;
+//		}
 		return false;
 	}
 
@@ -222,96 +234,126 @@ public class SharedWorldState implements SwirldState {
 	 */
 	private void runSmartContract(byte[] transaction){
 
-		//TODO - for now, the protocol is a very dumb keyword protocol
-		String _str=new String(transaction, StandardCharsets.UTF_8);
+		//xTODO - for now, the protocol is a very dumb keyword protocol
+		//String _str=new String(transaction, StandardCharsets.UTF_8);
 
-		Thread t = new Thread(new Runnable() {
-			@Override
-			public void run() {
+		String smartContractUri=null;
+		try {
+			Hashgraph.Tx _protobuf = Hashgraph.Tx.parseFrom(transaction);
+			smartContractUri=_protobuf.getSmartContractUri();
 
-				//this could be gvisor or some other more secure execution environment
-				String _cmd="docker run -t -d alpine";   //run Alpine Linux in background. Returns an ID once successfully called
-
-				try{
-					Runtime rt = Runtime.getRuntime();
-					Process p = rt.exec(_cmd);
-					p.waitFor();
-					System.out.println("Process exited with code = "+p.exitValue());
-
-					//Get process's output:
-					InputStream is = p.getInputStream();
-					BufferedReader br = new BufferedReader(new InputStreamReader(is));
-					String s;
-					String localContainerID="";
-					while((s=br.readLine()) != null){
-						localContainerID=s;
-						//System.out.println(s);
-					}
-					is.close();
-					System.out.println("Started local container with ID: "+localContainerID);
+		}catch(InvalidProtocolBufferException e){
+			System.out.println("InvalidProtocolBufferException");
+			System.out.println(e.getMessage());
+		}
 
 
+		//and run smart contract...
+		SmartContractRunnable telnetRunnable = new SmartContractRunnable(smartContractUri);
+		new Thread(telnetRunnable).start();
 
-
-
-					//checks:
-					if(localContainerID == null){
-						System.out.println("ERROR: Problem starting the container! Is Docker running?");
-						return;
-					}
-					if(localContainerID.compareTo("null") == 0){
-						System.out.println("ERROR: Problem starting the container! Is Docker running?");
-						return;
-					}
-					if(localContainerID.length() < 10){
-						System.out.println("ERROR: Problem starting the container! Is Docker running?");
-						return;
-					}
-
-
-
-
-
-
-
-
-					//passed checks
-					//shutdown after 10 seconds...
-					new Timer().schedule(
-							new TimerTaskEOH(localContainerID) {
-								@Override
-								public void run() {
-									System.out.println("Stopping localContainerID: "+this.localContainerID);
-
-									//fire and forget:
-									try {
-										String _cmd = "docker rm -f " + this.localContainerID;
-										Runtime rt = Runtime.getRuntime();
-										Process p = rt.exec(_cmd);
-										p.waitFor();
-										System.out.println("`docker rm -f ...` request exited with code = " + p.exitValue());
-
-									}catch(IOException e){
-										e.printStackTrace();
-									}catch(InterruptedException e){
-										e.printStackTrace();
-									}
-								}
-							},
-							walltime
-					);
-
-
-				}catch(IOException e){
-					e.printStackTrace();
-				}catch(InterruptedException e){
-					e.printStackTrace();
-				}
-			}
-		});
-		t.run();
 	}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	public class SmartContractRunnable implements Runnable{
+
+		private volatile String _smartContractUri;
+
+		public SmartContractRunnable(String _smartContractUri){
+			this._smartContractUri=_smartContractUri;
+		}
+		@Override
+		public void run() {
+
+			//this could be gvisor or some other more secure execution environment
+			//SMART_CONTRACT_URI is passed as ENV
+			String _cmd = "docker run -t -d -e SMART_CONTRACT_URI=" + _smartContractUri + " alpine";   //run Alpine Linux in background. Returns an ID once successfully called
+
+			try {
+				Runtime rt = Runtime.getRuntime();
+				Process p = rt.exec(_cmd);
+				p.waitFor();
+				System.out.println("Process exited with code = " + p.exitValue());
+
+				//Get process's output:
+				InputStream is = p.getInputStream();
+				BufferedReader br = new BufferedReader(new InputStreamReader(is));
+				String s;
+				String localContainerID = "";
+				while ((s = br.readLine()) != null) {
+					localContainerID = s;
+					//System.out.println(s);
+				}
+				is.close();
+				System.out.println("Started local container with ID: " + localContainerID);
+
+
+				//checks:
+				if (localContainerID == null) {
+					System.out.println("ERROR: Problem starting the container! Is Docker running?");
+					return;
+				}
+				if (localContainerID.compareTo("null") == 0) {
+					System.out.println("ERROR: Problem starting the container! Is Docker running?");
+					return;
+				}
+				if (localContainerID.length() < 10) {
+					System.out.println("ERROR: Problem starting the container! Is Docker running?");
+					return;
+				}
+
+
+				//passed checks
+				//shutdown after 10 seconds...
+				new Timer().schedule(
+						new TimerTaskEOH(localContainerID) {
+							@Override
+							public void run() {
+								System.out.println("Stopping localContainerID: " + this.localContainerID);
+
+								//fire and forget:
+								try {
+									String _cmd = "docker rm -f " + this.localContainerID;
+									Runtime rt = Runtime.getRuntime();
+									Process p = rt.exec(_cmd);
+									p.waitFor();
+									System.out.println("`docker rm -f ...` request exited with code = " + p.exitValue());
+
+								} catch (IOException e) {
+									e.printStackTrace();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+							}
+						},
+						walltime
+				);
+
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 
 	private class TimerTaskEOH extends TimerTask {

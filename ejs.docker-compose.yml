@@ -1,0 +1,26 @@
+version: '3'
+
+networks:
+  net_private:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: <%= CIDR %>
+
+services:
+  <% AUTOGEN_CIDRS.forEach(function(cidr,i){ %>
+
+  hashgraph<%= i %>:
+    build: ./services/hg
+    volumes:
+      - '.:/usr/src/app'
+      - './sdk:/usr/src/app/sdk'
+    ports:
+      - '<%= Number(PORT_BASE_INT)+Number(i) %>:<%= Number(PORT_BASE_EXT)+Number(i) %>'
+      - '<%= Number(PORT_TELNET_INT)+Number(i) %>:<%= Number(PORT_TELNET_EXT)+Number(i) %>'
+    env_file:
+      - .env
+    networks:
+      net_private:
+        ipv4_address: <%= cidr %>
+  <% }) %>

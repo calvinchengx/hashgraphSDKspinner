@@ -7,5 +7,6 @@ message Tx {
   //message string being written
   //**
   required string message = 2;
-  //optional string something_else = 3;
+
+  optional string smart_contract_uri = 3;
 }

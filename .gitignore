@@ -60,3 +60,9 @@ sdk
 .idea
 *.gitkeep
 javadoc
+
+
+
+
+docker-compose.yml
+Vagrantfile

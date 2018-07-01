@@ -159,10 +159,18 @@ public class SharedWorldMain implements SwirldMain {
 
 				if(e.getKeyCode()==KeyEvent.VK_ENTER){
 					this._buffer=this._buffer.trim();
-					console.out.println("Writing: "+this._buffer);
-					this.eoh_write();
+					console.out.println("Writing (stdin): "+this._buffer);
+					//this.eoh_write();
 
-					//clear the buffer:
+					//and write the buffer:
+					//first let's construct the protobuf:
+					Hashgraph.Tx tx = Hashgraph.Tx.newBuilder()
+							.setType(0)
+							.setMessage(this._buffer)
+							.build();
+					platform.createTransaction(tx.toByteArray());
+
+					//and clear the buffer:
 					this._buffer="";
 				}
 			}
@@ -172,17 +180,12 @@ public class SharedWorldMain implements SwirldMain {
 
 			}
 
-			private void eoh_write(){
-//				byte[] transaction = this._buffer.getBytes(StandardCharsets.UTF_8);
-//				platform.createTransaction(transaction);
-
-				//let's construct the protobuf:
-				Hashgraph.Tx tx = Hashgraph.Tx.newBuilder()
-						.setType(0)
-						.setMessage(this._buffer)
-						.build();
-				platform.createTransaction(tx.toByteArray());
-			}
+//			private void eoh_write(){
+////				byte[] transaction = this._buffer.getBytes(StandardCharsets.UTF_8);
+////				platform.createTransaction(transaction);
+//
+//
+//			}
 
 		});
 
@@ -283,23 +286,34 @@ public class SharedWorldMain implements SwirldMain {
 				listener = new ServerSocket(_port_ipv4,0,_ipv4);
 				while (true) {
 					Socket socket = listener.accept();
-					try {
+					//try {
 						in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-						SharedWorldMain.this.console.out.println(in.readLine());
+						String payload=in.readLine();
+						SharedWorldMain.this.console.out.println("Writing (telnet): "+payload);
 
-						out = new PrintWriter(socket.getOutputStream(), true);
-						out.println(new Date().toString());
+//						out = new PrintWriter(socket.getOutputStream(), true);
+//						out.println(new Date().toString());
 
-					} finally {
-						socket.close();
+						//and write the buffer:
+						//first let's construct the protobuf:
+						Hashgraph.Tx tx = Hashgraph.Tx.newBuilder()
+								.setType(0)
+								.setMessage(payload)
+								.build();
+						SharedWorldMain.this.platform.createTransaction(tx.toByteArray());
+
 						in.close();
-						out.close();
-					}
+
+					//} finally {
+						//socket.close();
+//						in.close();
+//						out.close();
+					//}
 				}
-			}
-			catch (IOException e){
+			}catch (IOException e){
 				System.out.println(e.getMessage());
 			}
+
 
 //			try{
 //				socket = new ServerSocket(_port_ipv4,0,_ipv4);
