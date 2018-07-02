@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 
-
+###
 #checks...
+###
 if [ -z "$SDK_PATH" ]; then
   echo ""
   echo "ERROR: Need to set SDK_PATH"
@@ -15,6 +16,12 @@ fi
 
 
 
+
+
+
+###
+#Modifications
+###
 
 #Push to sdk directory!
 pushd sdk.gradle

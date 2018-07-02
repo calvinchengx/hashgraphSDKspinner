@@ -13,7 +13,7 @@ swirld, <%= NETWORK_ID %>
 app,		<%= JAR_NAME %>,		   -1, -1, -1, -1, -1, -1
 
 
-<% AUTOGEN_CIDRS.forEach(function(cidr,i){ %>
+<% AUTOGEN_CIDRS.split(",").forEach(function(cidr,i){ %>
 address,  <%= i %>, nickname_<%= i %>,    1, <%= IP_INTERNAL %>, <%= Number(PORT_BASE_INT)+Number(i) %>, <%= cidr %>, <%= Number(PORT_BASE_EXT)+Number(i) %>
 <% }) %>
 

@@ -1,14 +1,35 @@
 #!/usr/bin/env bash
 
 
+###
 #checks...
+###
+if [ -z "$SDK_PATH" ]; then
+  echo ""
+  echo "ERROR: Need to set SDK_PATH"
+  echo "Did you load environment variables? \`export $(grep -v '^#' .env | xargs)\`"
+  echo ""
+  exit 1
+fi
+
+
 if [ "$MODE" = "container" ]; then
   echo ""
-  echo "ERROR: run using \`docker-compose\`"
+  echo "ERROR: You are in \"$MODE\" mode"
+  echo "Run using \`docker-compose\`"
   echo "e.g. \`docker-compose up\`"
   echo ""
   exit 1
 fi
+if [ "$MODE" = "vm" ]; then
+  echo ""
+  echo "ERROR: You are in \"$MODE\" mode"
+  echo "Run using \`vagrant\`"
+  echo "e.g. \`vagrant up\`"
+  echo ""
+  exit 1
+fi
+
 
 if [ -z "$SDK_PATH" ]; then
   echo ""
@@ -28,6 +49,26 @@ if [ ! -f "$SDK_PATH/data/apps/$JAR_NAME" ]; then
 fi
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###
+#Modifications
+###
 
 #Push to sdk directory!
 pushd sdk

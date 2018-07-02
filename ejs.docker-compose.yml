@@ -8,16 +8,17 @@ networks:
         - subnet: <%= CIDR %>
 
 services:
-  <% AUTOGEN_CIDRS.forEach(function(cidr,i){ %>
+  <% AUTOGEN_CIDRS.split(",").forEach(function(cidr,i){ %>
 
   hashgraph<%= i %>:
-    build: ./services/hg
-    volumes:
-      - '.:/usr/src/app'
-      - './sdk:/usr/src/app/sdk'
+    #Dockerfile in current dir:
+    build: .
+    # volumes:
+    #   - './sdk.gradle/build:/usr/src/app/sdk.gradle'
+    #   - './sdk:/usr/src/app/sdk'
     ports:
-      - '<%= Number(PORT_BASE_INT)+Number(i) %>:<%= Number(PORT_BASE_EXT)+Number(i) %>'
-      - '<%= Number(PORT_TELNET_INT)+Number(i) %>:<%= Number(PORT_TELNET_EXT)+Number(i) %>'
+      - '<%= Number(PORT_BASE_INT) %>:<%= Number(PORT_BASE_EXT) %>'
+      - '<%= Number(PORT_BASE_INT)+Number(TELNET_PORT_OFFSET) %>:<%= Number(PORT_BASE_INT)+Number(TELNET_PORT_OFFSET) %>'
     env_file:
       - .env
     networks:

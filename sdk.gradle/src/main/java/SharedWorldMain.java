@@ -41,6 +41,8 @@ import com.swirlds.platform.SwirldState;
  * prints it, too.
  */
 public class SharedWorldMain implements SwirldMain {
+
+
 	/** the platform running this app */
 	public Platform platform;
 	/** ID number for this member */
@@ -50,10 +52,24 @@ public class SharedWorldMain implements SwirldMain {
 	/** sleep this many milliseconds after each sync */
 	public final int sleepPeriod = 100;
 
-	/** telnet port connections are available at this offset:**/
-	private final int portOffset = 1000;
+	/** telnet port connections are available at this address:**/
+	private int telnetPortOffset = -1;   //Integer.valueOf(System.getenv("PORT_TELNET"));
 
 
+	/**
+	 * Constructor
+	 */
+	public SharedWorldMain(){
+		//check environment variables are set correctly...
+		try{
+			telnetPortOffset = Integer.valueOf(System.getenv("TELNET_PORT_OFFSET"));
+		}catch(Exception e){
+			System.err.println("");
+			System.err.println("ERROR: environment variables not set!");
+			System.err.println("Try running: `export $(grep -v '^#' ./.env | xargs)`");
+			System.exit(1);
+		}
+	}
 
 	/**
 	 * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a
@@ -64,6 +80,7 @@ public class SharedWorldMain implements SwirldMain {
 	 *            these are not used
 	 */
 	public static void main(String[] args) {
+
 		Browser.main(args);
 	}
 
@@ -77,11 +94,15 @@ public class SharedWorldMain implements SwirldMain {
 	public void init(Platform platform, long id) {
 		this.platform = platform;
 		this.selfId = id;
-		this.console = platform.createConsole(true); // create the window, make it visible
-		platform.setAbout("Hello Swirld v. 1.0\n"); // set the browser's "about" box
-		platform.setSleepAfterSync(sleepPeriod);
+		//only show if GUI is ON:
+		if(!System.getenv("GUI_ONOFF").toLowerCase().equals("off")){
+			this.console = platform.createConsole(true); // create the window, make it visible
+		}
 
+		/////platform.setAbout("Hello Swirld v. 1.0\n"); // set the browser's "about" box
+		platform.setSleepAfterSync(sleepPeriod);
 		platform.getParameters();
+
 	}
 
 	@Override
@@ -98,6 +119,7 @@ public class SharedWorldMain implements SwirldMain {
 		try{
 			ipv4=InetAddress.getByAddress(platform.getState().getAddressBookCopy().getAddress(selfId).getAddressExternalIpv4());   //.getHostAddress();
 		}catch(UnknownHostException e){
+			System.err.println("ERROR: UnknownHostException!");
 			System.err.println(e.toString());
 		}
 		port_ipv4 = platform.getState().getAddressBookCopy().getAddress(selfId).getPortExternalIpv4();
@@ -106,9 +128,10 @@ public class SharedWorldMain implements SwirldMain {
 
 
 
-
-		console.out.println("Hello Swirld from " + myName + " ("+ipv4.getHostAddress()+":"+String.valueOf(port_ipv4)+")");
-
+		//only show if GUI is ON:
+		if(!System.getenv("GUI_ONOFF").toLowerCase().equals("off")) {
+			console.out.println("Hello Swirld from " + myName + " (" + ipv4.getHostAddress() + ":" + String.valueOf(port_ipv4) + ")");
+		}
 
 
 
@@ -145,56 +168,61 @@ public class SharedWorldMain implements SwirldMain {
 		/////
 		//stdin - raw stdin connections
 		/////
-		this.console.addKeyListener(new KeyListener() {
-			private String _buffer="";
+		if(!System.getenv("GUI_ONOFF").toLowerCase().equals("off")) {
+			this.console.addKeyListener(new KeyListener() {
+				private String _buffer = "";
 
-			@Override
-			public void keyTyped(KeyEvent e) {
+				@Override
+				public void keyTyped(KeyEvent e) {
 
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-				this._buffer+=e.getKeyChar();
-
-				if(e.getKeyCode()==KeyEvent.VK_ENTER){
-					this._buffer=this._buffer.trim();
-					console.out.println("Writing (stdin): "+this._buffer);
-					//this.eoh_write();
-
-					//and write the buffer:
-					//first let's construct the protobuf:
-					Hashgraph.Tx tx = Hashgraph.Tx.newBuilder()
-							.setType(0)
-							.setMessage(this._buffer)
-							.build();
-					platform.createTransaction(tx.toByteArray());
-
-					//and clear the buffer:
-					this._buffer="";
 				}
-			}
 
-			@Override
-			public void keyReleased(KeyEvent e) {
+				@Override
+				public void keyPressed(KeyEvent e) {
+					this._buffer += e.getKeyChar();
 
-			}
+					if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						this._buffer = this._buffer.trim();
+						//only show if GUI is ON:
+						if (!System.getenv("GUI_ONOFF").toLowerCase().equals("off")) {
+							console.out.println("Writing (stdin): " + this._buffer);
+						}
+						//this.eoh_write();
 
-//			private void eoh_write(){
-////				byte[] transaction = this._buffer.getBytes(StandardCharsets.UTF_8);
-////				platform.createTransaction(transaction);
-//
-//
-//			}
+						//and write the buffer:
+						//first let's construct the protobuf:
+						Hashgraph.Tx tx = Hashgraph.Tx.newBuilder()
+								.setType(0)
+								.setMessage(this._buffer)
+								.build();
+						platform.createTransaction(tx.toByteArray());
 
-		});
+						//and clear the buffer:
+						this._buffer = "";
+					}
+				}
+
+				@Override
+				public void keyReleased(KeyEvent e) {
+
+				}
+
+				//			private void eoh_write(){
+				////				byte[] transaction = this._buffer.getBytes(StandardCharsets.UTF_8);
+				////				platform.createTransaction(transaction);
+				//
+				//
+				//			}
+
+			});
+		}
 
 
 
 		/////
 		//network in - raw telnet connections (separate Thread)
 		/////
-		TelnetRunnable telnetRunnable = new TelnetRunnable(ipv4,port_ipv4+portOffset);
+		TelnetRunnable telnetRunnable = new TelnetRunnable(ipv4,port_ipv4+telnetPortOffset);
 		new Thread(telnetRunnable).start();
 
 
@@ -252,7 +280,10 @@ public class SharedWorldMain implements SwirldMain {
 
 				if (!_lastAllReceived.equals(allReceived)) {
 					_lastAllReceived = allReceived;
-					console.out.println("Received: " + allReceived); // print all received transactions
+					//only show if GUI is ON:
+					if (!System.getenv("GUI_ONOFF").toLowerCase().equals("off")) {
+						console.out.println("Received: " + allReceived); // print all received transaction
+					}
 				}
 				try {
 					Thread.sleep(sleepPeriod);
@@ -289,8 +320,10 @@ public class SharedWorldMain implements SwirldMain {
 					//try {
 						in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 						String payload=in.readLine();
-						SharedWorldMain.this.console.out.println("Writing (telnet): "+payload);
-
+					//only show if GUI is ON:
+						if(!System.getenv("GUI_ONOFF").toLowerCase().equals("off")) {
+							SharedWorldMain.this.console.out.println("Writing (telnet): " + payload);
+						}
 //						out = new PrintWriter(socket.getOutputStream(), true);
 //						out.println(new Date().toString());
 

@@ -16,17 +16,30 @@ let result=null
 //checks
 /////
 let cidr=""
-let envfileVarsObj=null
 
 //check for .env file
-try{
-  envfileVarsObj=envfile.parseFileSync(__dirname+"/.env")
-}catch(e){
-  console.error(".env file not found! Try again...")
-  process.exit(0)
+// try{
+//   envfileVarsObj=envfile.parseFileSync(__dirname+"/.env")
+// }catch(e){
+//   console.error(".env file not found! Try again...")
+//   process.exit(0)
+// }
+//check environment variables set:
+if(typeof process.env.MODE == 'undefined'){
+  console.log("ERROR: environment variables not set!")
+  console.log("Try running: `export $(grep -v '^#' ./.env | xargs)`")
+  process.exit()
 }
+if(typeof process.env.PORT_BASE_INT == 'undefined'){
+  console.log("ERROR: environment variables not set!")
+  console.log("Try running: `export $(grep -v '^#' ./.env | xargs)`")
+  process.exit()
+}
+
+
+
 //check for cidrs:
-result=CIDR.cidr.validate(envfileVarsObj.CIDR)
+result=CIDR.cidr.validate(process.env.CIDR)
 if(result==null){
   //OK!
 }else{
@@ -34,22 +47,32 @@ if(result==null){
   process.exit(0)
 }
 //check for valid sdk location:
-if(!fs.existsSync(envfileVarsObj.SDK_PATH+"/config.txt")){
+if(!fs.existsSync(process.env.SDK_PATH+"/config.txt")){
   console.log("Invalid sdk path!")
   process.exit(0)
 }
-if(!fs.existsSync(envfileVarsObj.SDK_PATH+"/swirlds.jar")){
+if(!fs.existsSync(process.env.SDK_PATH+"/swirlds.jar")){
   console.log("Could not find swirlds.jar at that sdk path!")
   process.exit(0)
 }
 //check .jar file is valid:
-if(!fs.existsSync(envfileVarsObj.SDK_PATH+"/data/apps/"+envfileVarsObj.JAR_NAME)){
-  console.log("Could not find a jar file at: "+envfileVarsObj.SDK_PATH+"/data/apps/"+envfileVarsObj.JAR_NAME+"!")
+if(!fs.existsSync(process.env.SDK_PATH+"/data/apps/"+process.env.JAR_NAME)){
+  console.log("Could not find a jar file at: "+process.env.SDK_PATH+"/data/apps/"+process.env.JAR_NAME+"!")
   process.exit(0)
 }
 
 
 
+
+
+
+
+
+
+/////
+//Modifications
+/////
+console.log("-->> Generating config for mode: "+process.env.MODE)
 
 
 
@@ -58,7 +81,7 @@ if(!fs.existsSync(envfileVarsObj.SDK_PATH+"/data/apps/"+envfileVarsObj.JAR_NAME)
 
 
 //Add a symlink:
-cmd="ln -sf "+envfileVarsObj.SDK_PATH+".";
+cmd="ln -sf "+process.env.SDK_PATH+" .";
 result=execSync(cmd)
 
 
@@ -95,31 +118,32 @@ result=execSync(cmd)
 
 
 //generate "tmp.json" with any AUTOGEN parameters:
-envfileVarsObj.AUTOGEN_CIDRS=CIDR.cidr.ips(envfileVarsObj.CIDR)
-envfileVarsObj.AUTOGEN_NETMASK=CIDR.cidr.netmask(envfileVarsObj.CIDR)
-envfileVarsObj.AUTOGEN_SUBNET=CIDR.cidr.min(envfileVarsObj.CIDR)
+// console.log(JSON.parse(JSON.stringify(CIDR.cidr.ips(process.env.CIDR))).toString())
+// //TODO...
+process.env.AUTOGEN_CIDRS=CIDR.cidr.ips(process.env.CIDR)   //it's an array - JSON stringify it...
+process.env.AUTOGEN_NETMASK=CIDR.cidr.netmask(process.env.CIDR)
+process.env.AUTOGEN_SUBNET=CIDR.cidr.min(process.env.CIDR)
 //force to end in .255 (relavent only for vm/Vagrantfile case...)
-let s1=CIDR.cidr.max(envfileVarsObj.CIDR).split(".")
-envfileVarsObj.AUTOGEN_BROADCAST=s1[0]+"."+s1[1]+"."+s1[2]+".255"
+let s1=CIDR.cidr.max(process.env.CIDR).split(".")
+process.env.AUTOGEN_BROADCAST=s1[0]+"."+s1[1]+"."+s1[2]+".255"
 //Next do some hard-coded logic:
-if(envfileVarsObj.MODE=="container"){
+if(process.env.MODE=="container"){
   //-->>container
-  envfileVarsObj.GUI_ONOFF="off"
-  envfileVarsObj.N_NODES=1
-}else if(envfileVarsObj.MODE=="vm"){
+  process.env.GUI_ONOFF="off"
+  process.env.N_NODES=1
+}else if(process.env.MODE=="vm"){
   //-->>vm
-  envfileVarsObj.GUI_ONOFF="off"
-  envfileVarsObj.N_NODES=1
+  process.env.GUI_ONOFF="off"
+  process.env.N_NODES=1
 }else{
   //-->>local
   //join "127.0.0.1" x times and remove trailing comma...
-  envfileVarsObj.AUTOGEN_CIDRS=Array(Number(envfileVarsObj.N_NODES)).fill("127.0.0.1")//.replace(/,\s*$/, "")
+  process.env.AUTOGEN_CIDRS=Array(Number(process.env.N_NODES)).fill("127.0.0.1")//.replace(/,\s*$/, "")
   //int and ext ports the same...
-  envfileVarsObj.PORT_BASE_EXT=envfileVarsObj.PORT_BASE_INT
+  process.env.PORT_BASE_EXT=process.env.PORT_BASE_INT
 }
-let envfileVarsObjNew=envfile.parseSync(JSON.stringify(envfileVarsObj))
 //and write back to file:
-fs.writeFileSync(__dirname+"/tmp.json",JSON.stringify(envfileVarsObjNew))
+fs.writeFileSync(__dirname+"/tmp.json",JSON.stringify(process.env))
 //fs.writeFileSync(__dirname+"/.env",envfile.stringifySync(envfileVarsObjNew))
 
 
@@ -131,13 +155,13 @@ fs.writeFileSync(__dirname+"/tmp.json",JSON.stringify(envfileVarsObjNew))
 
 
 //Now generate container/vm files:
-if(envfileVarsObj.MODE=="container"){
+if(process.env.MODE=="container"){
   //-->>container
   //Now create a docker-compose.yml
   cmd="./node_modules/.bin/ejs-cli ./ejs.docker-compose.yml --options tmp.json > docker-compose.yml"
   result=execSync(cmd)
   console.log("- Docker \"docker-compose.yml\" generated successfully")
-}else if(envfileVarsObj.MODE=="vm"){
+}else if(process.env.MODE=="vm"){
   //-->>vm
   //Now create a Vagrantfile
   cmd="./node_modules/.bin/ejs-cli ./ejs.Vagrantfile --options tmp.json > Vagrantfile"
@@ -161,17 +185,17 @@ if(envfileVarsObj.MODE=="container"){
 
 //Now generate the config.txt file:
 //backup config.txt
-if(!fs.existsSync(envfileVarsObj.SDK_PATH+"/config.orig.txt")){
-  cmd="cp "+envfileVarsObj.SDK_PATH+"/config.txt "+envfileVarsObj.SDK_PATH+"/config.orig.txt"
+if(!fs.existsSync(process.env.SDK_PATH+"/config.orig.txt")){
+  cmd="cp "+process.env.SDK_PATH+"/config.txt "+process.env.SDK_PATH+"/config.orig.txt"
   result=execSync(cmd)
 }else{
-  cmd="cp "+envfileVarsObj.SDK_PATH+"/config.orig.txt "+envfileVarsObj.SDK_PATH+"/config.txt"
+  cmd="cp "+process.env.SDK_PATH+"/config.orig.txt "+process.env.SDK_PATH+"/config.txt"
   result=execSync(cmd)
 }
 //and generate:
-cmd="./node_modules/.bin/ejs-cli ./ejs.config.txt --options tmp.json > "+envfileVarsObj.SDK_PATH+"/config.txt"
+cmd="./node_modules/.bin/ejs-cli ./ejs.config.txt --options tmp.json > "+process.env.SDK_PATH+"/config.txt"
 result=execSync(cmd)
-console.log("- swirlds sdk \"config.txt\" ("+envfileVarsObj.SDK_PATH+"/config.txt"+") generated successfully")
+console.log("- swirlds sdk \"config.txt\" ("+process.env.SDK_PATH+"/config.txt"+") generated successfully")
 
 
 
