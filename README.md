@@ -81,11 +81,15 @@ In this mode all nodes run inside their own virtual machine. IP address of each 
 
 
 
-**Step 2: compile hashgraph sdk**
+**Step 2: compile hashgraph sdk (Gradle version of sdk)**
 
 Generate your .jar file with:
 
 `./compile`
+
+Recommend using `IntelliJ` to edit the `SharedWorldMain.java` and `SharedWorldState.java`
+
+protobuf definition in "./sdk.gradle/src/main/proto/Hashgraph.proto"
 
 **Step 3: start your private hashgraph network**
 
