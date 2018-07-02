@@ -55,42 +55,59 @@ Link hashgraph SDK:
 
 
 
-**Step 1: Build your hashgraph program**
 
-`cd sdk.gradle`
+**Step 1: Generate configuration**
 
-`gradle jar`
+Edit .env and set environment variables as appropriate
 
-**Step 2: Configure your node(s)**
+Load all environment variables:
 
-By default, we generate:
+`export $(grep -v '^#' .env | xargs)`
 
-- one hashgraph node
-- GUI disabled
+And generate config:
 
-To test locally on a single machine, you could
+`./generateConfig.js`
 
-- enable more than one node (see "N_NODES" parameter in `.env` file)
-- enable GUI (see "GUI_ON" parameter in `.env` file)
+There are three modes of operation:
+
+**i) local**
+All nodes run on 127.0.0.1 with a unique port number. Number of nodes to start up is specified by `N_NODES` environment variable. Port numbers are specified via `PORT_BASE_EXT` and `TELNET_PORT_OFFSET`. Telnet connect to each node via 127.0.0.1 and the telnet port. e.g. `telnet 127.0.0.1 4001`.
+
+**ii) container**
+In this mode all nodes run inside their own Docker container. IP address of each container is specified by the `CIDR` environment variable. Ports are specified in environment variable. `./generateConfig.js` will generate a `docker-compose.yml` file.
+
+**iii) vm**
+In this mode all nodes run inside their own virtual machine. IP address of each vm is specified by the `CIDR` environment variable. Ports are specified in environment variable. `./generateConfig.js` will generate a `Vagrantfile` configuration file.
 
 
-**Step 2: Generate config.txt**
 
-`./generate_config.txt.bash ../sdk SharedWorld.jar`   
+**Step 2: compile hashgraph sdk**
 
-, where "../sdk" is the official sdk path and "SharedWorld.jar" is the name of the generated .jar file
+Generate your .jar file with:
 
-**Step 3: Run your program**
+`./compile`
 
-`cd sdk`
+**Step 3: start your private hashgraph network**
 
-`java -jar swirlds.jar`
+`./run.bash`
+
+To start a Docker network:
+
+`docker-compose up`
+
+To start a network in Virtualbox:
+
+`vagrant up`
+
 
 
 
 ### Interacting with the hashgraph network
 
-When you run the program, a number of windows appear
+When you run the program in `local` mode, a number of windows appear:
 
-- write to the distributed ledger by entering strings in any one of the windows
+- write to the distributed ledger by entering strings in any one of the windows (stdin)
+
+In all modes (`local`, `container` and `vm`) you can connect via telnet:
+
 - or, write to the ledger by telnet'ing into any one of the windows e.g. `telnet 127.0.0.1 51206`
