@@ -1,14 +1,17 @@
-# hashgraphSDKgradle
-Gradle version of hashgraph SDK
+# hashgraphSDKspinner
 
-Stripped down version of the Swirlds SDK. Featuring:
+Spin up a hashgraph private network in one of three modes:
 
-- Gradle build (instead of Maven)
+- local
+- container (Docker)
+- virtual machine (Vagrant/Virtualbox)
+
+Also comes with a stripped down version of the Swirlds SDK. Featuring:
+
+- Gradle build (instead of Maven). Built with Gradle/IntelliJ IDE in mind
 - simplified project structure - focus on state and application
-- copy and paste generated .jar into official Swirls SDK
-- experiments with Google protobuf for state storage
-
-Focus on designing your Main class and State class. Built with Gradle/IntelliJ IDE in mind.
+- Google protobuf for state storage and messaging
+- telnet interface to nodes
 
 Simply provide a reference to the official SDK.
 
