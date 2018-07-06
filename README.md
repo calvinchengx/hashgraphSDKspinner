@@ -9,11 +9,11 @@ Spin up a hashgraph private network in one of three modes:
 Also comes with a stripped down version of the Swirlds SDK. Featuring:
 
 - Gradle build (instead of Maven). Built with Gradle/IntelliJ IDE in mind
-- simplified project structure - focus on state and application
+- Simplified project structure - focus on state and application
 - Google protobuf for state storage and messaging
-- telnet interface to nodes
+- `telnet` interface to nodes
 
-Simply provide a reference to the official SDK.
+Simply provide a reference to the official SDK (Download from: https://www.swirlds.com/download).
 
 **Using Swirlds sdk version: 18.05.23**
 
