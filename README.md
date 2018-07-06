@@ -102,7 +102,7 @@ To start a Docker network:
 
 `docker-compose up`
 
-To start a network in Virtualbox:
+To start a network in Virtualbox (*~ experimental at present ~*):
 
 `vagrant up`
 
