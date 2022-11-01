@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/hynese/hashgraphSDKgradle#readme",
   "dependencies": {
-    "ejs-cli": "^2.0.1",
+    "ejs-cli": "^2.2.3",
     "node-cidr": "^1.0.0"
   }
 }
